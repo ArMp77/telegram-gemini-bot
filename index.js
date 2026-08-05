@@ -81,8 +81,8 @@ async function diagnosticarModelosDisponibles() {
 }
 
 async function llamarGeminiREST(contentsPayload) {
-  // Probamos con gemini-2.0-flash o gemini-2.5-flash
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // Modelo con Free Tier activo por defecto
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const response = await fetch(url, {
     method: 'POST',
