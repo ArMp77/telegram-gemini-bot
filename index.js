@@ -13,7 +13,12 @@ if (!TELEGRAM_TOKEN || !GEMINI_API_KEY) {
   process.exit(1);
 }
 
-const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
+const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
+
+// Forzar el inicio de polling de forma limpia
+bot.startPolling({ restart: true }).catch((err) => {
+  console.error("Error al iniciar polling:", err.message);
+});
 
 // Almacenamiento temporal del último ticket por chat
 const historialChats = {};
