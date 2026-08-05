@@ -1,31 +1,18 @@
-JSON
-{
-  "name": "telegram-gemini-bot",
-  "version": "1.0.0",
-  "description": "Bot de reportes de fibra para Telegram con Gemini",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "@google/generative-ai": "^0.21.0",
-    "express": "^4.19.2",
-    "node-telegram-bot-api": "^0.66.0"
-  }
-}
-2. Modifica tu archivo index.js en GitHub
-Debes ajustar la forma en que se importa la librería en index.js. Reemplaza el contenido de tu index.js con la estructura oficial actualizada:
-
-JavaScript
 const TelegramBot = require('node-telegram-bot-api');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const express = require('express');
+const fetch = require('node-fetch');
 
 const app = express();
 app.use(express.json());
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!TELEGRAM_TOKEN || !GEMINI_API_KEY) {
+  console.error("❌ ERROR CRÍTICO: Faltan las variables TELEGRAM_TOKEN o GEMINI_API_KEY en Render.");
+  process.exit(1);
+}
 
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -86,8 +73,8 @@ bot.on('message', async (msg) => {
       const fileLink = await bot.getFileLink(msg.voice.file_id);
       
       const response = await fetch(fileLink);
-      const arrayBuffer = await response.arrayBuffer();
-      const base64Audio = Buffer.from(arrayBuffer).toString('base64');
+      const buffer = await response.buffer();
+      const base64Audio = buffer.toString('base64');
 
       const audioPart = {
         inlineData: {
