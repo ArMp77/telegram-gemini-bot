@@ -1,5 +1,4 @@
 const TelegramBot = require('node-telegram-bot-api');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const express = require('express');
 const fetch = require('node-fetch');
 
@@ -10,12 +9,14 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!TELEGRAM_TOKEN || !GEMINI_API_KEY) {
-  console.error("❌ ERROR CRÍTICO: Faltan las variables TELEGRAM_TOKEN o GEMINI_API_KEY en Render.");
+  console.error("❌ ERROR CRÍTICO: Faltan las variables de entorno.");
   process.exit(1);
 }
 
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+// Almacenamiento temporal del último ticket por chat
+const historialChats = {};
 
 const SYSTEM_PROMPT = `
 Eres un asistente técnico de telecomunicaciones para la empresa ThunderNet.
@@ -59,41 +60,77 @@ Potencias⚡️: [Extraer del dictado/texto o mantener la del ticket si no se in
 Técnico: Alfredo Meléndez
 `;
 
+async function llamarGeminiREST(contentsPayload) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: contentsPayload,
+      systemInstruction: {
+        parts: [{ text: SYSTEM_PROMPT }]
+      }
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error('❌ Error API Gemini REST:', JSON.stringify(data));
+    throw new Error(data.error?.message || 'Error en respuesta de Gemini');
+  }
+
+  return data.candidates[0].content.parts[0].text;
+}
+
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
 
   try {
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: SYSTEM_PROMPT 
-    });
+    // Si envía un mensaje de texto
+    if (msg.text) {
+      bot.sendMessage(chatId, "⏳ Generando reporte...");
+      historialChats[chatId] = msg.text;
 
-    if (msg.voice) {
+      const payload = [{
+        role: "user",
+        parts: [{ text: `ENTRADA DEL TÉCNICO:\n${msg.text}` }]
+      }];
+
+      const respuestaTexto = await llamarGeminiREST(payload);
+      bot.sendMessage(chatId, respuestaTexto);
+    } 
+    // Si envía una nota de voz
+    else if (msg.voice) {
       bot.sendMessage(chatId, "⏳ Procesando audio y generando reporte...");
+
       const fileLink = await bot.getFileLink(msg.voice.file_id);
-      
-      const response = await fetch(fileLink);
-      const buffer = await response.buffer();
+      const resAudio = await fetch(fileLink);
+      const buffer = await resAudio.buffer();
       const base64Audio = buffer.toString('base64');
 
-      const audioPart = {
-        inlineData: {
-          data: base64Audio,
-          mimeType: 'audio/ogg'
-        }
-      };
+      const contextoPrevio = historialChats[chatId] ? `TICKET PREVIO RECIBIDO:\n${historialChats[chatId]}\n\n` : "";
 
-      const result = await model.generateContent([audioPart, "Procesa el audio e integra con la plantilla."]);
-      bot.sendMessage(chatId, result.response.text());
+      const payload = [{
+        role: "user",
+        parts: [
+          { text: `${contextoPrevio}Procesa el siguiente audio de campo y genera la plantilla final.` },
+          {
+            inline_data: {
+              mime_type: "audio/ogg",
+              data: base64Audio
+            }
+          }
+        ]
+      }];
 
-    } else if (msg.text) {
-      bot.sendMessage(chatId, "⏳ Generando reporte...");
-      const result = await model.generateContent(`Entrada del técnico:\n${msg.text}`);
-      bot.sendMessage(chatId, result.response.text());
+      const respuestaTexto = await llamarGeminiREST(payload);
+      bot.sendMessage(chatId, respuestaTexto);
     }
   } catch (error) {
-    console.error('Error procesando mensaje:', error);
-    bot.sendMessage(chatId, '❌ Hubo un error procesando la información. Inténtalo de nuevo.');
+    console.error('❌ ERROR PROCESANDO MENSAJE:', error.message);
+    bot.sendMessage(chatId, '❌ Hubo un error procesando la información. Inténtalo nuevamente.');
   }
 });
 
