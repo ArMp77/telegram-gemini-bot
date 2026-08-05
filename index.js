@@ -1,33 +1,34 @@
 const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const fetch = require('node-fetch');
+const Groq = require('groq-sdk');
 
 const app = express();
 app.use(express.json());
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-if (!TELEGRAM_TOKEN || !GEMINI_API_KEY) {
-  console.error("❌ ERROR CRÍTICO: Faltan las variables TELEGRAM_TOKEN o GEMINI_API_KEY en Render.");
+if (!TELEGRAM_TOKEN || !GROQ_API_KEY) {
+  console.error("❌ Faltan las variables TELEGRAM_TOKEN o GROQ_API_KEY en Render.");
   process.exit(1);
 }
 
+const groq = new Groq({ apiKey: GROQ_API_KEY });
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
 
-// Almacenamiento temporal del último ticket por chat
 const historialChats = {};
 
 const SYSTEM_PROMPT = `
 Eres un asistente técnico de telecomunicaciones para la empresa ThunderNet.
 
 INSTRUCCIONES DE EXTRACCIÓN FLEXIBLE:
-1. Recibirás un ticket de avería de fibra óptica en texto y/o el dictado (texto o nota de voz) enviado por el técnico Alfredo Meléndez.
-2. El técnico dictará los datos de campo EN CUALQUIER ORDEN, con lenguaje informal, pausado o con correcciones sobre la marcha.
-3. Identifica contextualmente qué significa cada dato sin importar la secuencia en que lo mencione. Si se corrige durante el audio, toma únicamente la última versión.
-4. Si un campo no es mencionado ni en el ticket ni en el dictado, escribe "N/A".
+1. Recibirás un ticket de avería de fibra óptica en texto y/o el dictado enviado por el técnico Alfredo Meléndez.
+2. El técnico dictará los datos de campo EN CUALQUIER ORDEN, con lenguaje informal o correcciones.
+3. Toma únicamente la última versión si hay correcciones sobre la marcha.
+4. Si un campo no se menciona, escribe "N/A".
 
-PLANTILLA DE SALIDA OBLIGATORIA (No agregues introducciones ni saludos):
+PLANTILLA DE SALIDA OBLIGATORIA (Sin introducciones ni saludos):
 
 Nro. de Ticket: [Extraer del ticket]
 
@@ -60,55 +61,6 @@ Potencias⚡️: [Extraer del dictado/texto o mantener la del ticket si no se in
 Técnico: Alfredo Meléndez
 `;
 
-// Función para listar modelos disponibles en tus logs de Render
-async function diagnosticarModelosDisponibles() {
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
-    const data = await res.json();
-    if (data.models) {
-      console.log("📋 MODELOS DISPONIBLES EN TU CUENTA:");
-      data.models.forEach(m => {
-        if (m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")) {
-          console.log(`  - ${m.name}`);
-        }
-      });
-    } else {
-      console.error("❌ Respuesta al listar modelos:", JSON.stringify(data));
-    }
-  } catch (err) {
-    console.error("❌ Error consultando modelos:", err.message);
-  }
-}
-
-async function llamarGeminiREST(contentsPayload) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: contentsPayload,
-      systemInstruction: {
-        parts: [{ text: SYSTEM_PROMPT }]
-      }
-    })
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    console.error('❌ Error API Gemini REST:', JSON.stringify(data));
-    throw new Error(data.error?.message || 'Error en respuesta de Gemini');
-  }
-
-  const candidate = data.candidates && data.candidates[0];
-  if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0]) {
-    return candidate.content.parts[0].text;
-  }
-
-  throw new Error("Respuesta de Gemini vacía o con formato no esperado.");
-}
-
 async function procesarMensaje(msg) {
   const chatId = msg.chat.id;
 
@@ -117,43 +69,48 @@ async function procesarMensaje(msg) {
       bot.sendMessage(chatId, "⏳ Generando reporte...");
       historialChats[chatId] = msg.text;
 
-      const payload = [{
-        role: "user",
-        parts: [{ text: `ENTRADA DEL TÉCNICO:\n${msg.text}` }]
-      }];
+      const completion = await groq.chat.completions.create({
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: `ENTRADA DEL TÉCNICO:\n${msg.text}` }
+        ],
+        model: "llama-3.3-70b-versatile",
+      });
 
-      const respuestaTexto = await llamarGeminiREST(payload);
-      bot.sendMessage(chatId, respuestaTexto);
+      const respuesta = completion.choices[0]?.message?.content || "No se pudo generar respuesta.";
+      bot.sendMessage(chatId, respuesta);
     } 
     else if (msg.voice) {
-      bot.sendMessage(chatId, "⏳ Procesando audio y generando reporte...");
+      bot.sendMessage(chatId, "⏳ Transcribiendo audio y generando reporte...");
 
       const fileLink = await bot.getFileLink(msg.voice.file_id);
       const resAudio = await fetch(fileLink);
       const buffer = await resAudio.buffer();
-      const base64Audio = buffer.toString('base64');
 
+      // Transcripción de audio ultra rápida con Whisper en Groq
+      const transcription = await groq.audio.transcriptions.create({
+        file: await Groq.toFile(buffer, "audio.ogg"),
+        model: "whisper-large-v3",
+        language: "es",
+      });
+
+      const textoAudio = transcription.text;
       const contextoPrevio = historialChats[chatId] ? `TICKET PREVIO RECIBIDO:\n${historialChats[chatId]}\n\n` : "";
 
-      const payload = [{
-        role: "user",
-        parts: [
-          { text: `${contextoPrevio}Procesa el siguiente audio de campo y genera la plantilla final.` },
-          {
-            inline_data: {
-              mime_type: "audio/ogg",
-              data: base64Audio
-            }
-          }
-        ]
-      }];
+      const completion = await groq.chat.completions.create({
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: `${contextoPrevio}DICTADO DE CAMPO TRANSCROTO:\n${textoAudio}` }
+        ],
+        model: "llama-3.3-70b-versatile",
+      });
 
-      const respuestaTexto = await llamarGeminiREST(payload);
-      bot.sendMessage(chatId, respuestaTexto);
+      const respuesta = completion.choices[0]?.message?.content || "No se pudo generar respuesta.";
+      bot.sendMessage(chatId, respuesta);
     }
   } catch (error) {
-    console.error('❌ ERROR PROCESANDO MENSAJE:', error.message);
-    bot.sendMessage(chatId, '❌ Hubo un error procesando la información. Inténtalo nuevamente.');
+    console.error('❌ ERROR PROCESANDO MENSAJE:', error);
+    bot.sendMessage(chatId, '❌ Hubo un error procesando la información.');
   }
 }
 
@@ -164,20 +121,17 @@ app.post(`/bot${TELEGRAM_TOKEN}`, (req, res) => {
   res.sendStatus(200);
 });
 
-app.get('/', (req, res) => res.send('Bot activo con Webhook'));
+app.get('/', (req, res) => res.send('Bot activo con Webhook (Groq Engine)'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`Servidor activo en puerto ${PORT}`);
-  
-  // Ejecuta la verificación de modelos disponibles al iniciar
-  diagnosticarModelosDisponibles();
 
   if (process.env.RENDER_EXTERNAL_URL) {
     const webhookUrl = `${process.env.RENDER_EXTERNAL_URL}/bot${TELEGRAM_TOKEN}`;
     try {
       await bot.setWebHook(webhookUrl);
-      console.log(`✅ Webhook registrado con éxito en: ${webhookUrl}`);
+      console.log(`✅ Webhook registrado en: ${webhookUrl}`);
     } catch (err) {
       console.error('❌ Error registrando Webhook:', err.message);
     }
