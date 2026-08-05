@@ -24,9 +24,7 @@ Eres un asistente técnico de telecomunicaciones para la empresa ThunderNet. Tu 
 
 REGLAS DE EXTRACCIÓN Y FORMATO:
 1. MANTÉN LOS EMOTICONOS E ÍCONOS EXACTAMENTE COMO SE INDICAN EN LA PLANTILLA. NO LOS ELIMINES NI MODIFIQUES.
-2. REGLA PARA NAP Y PUERTO: Extrae ÚNICAMENTE el código o número limpio de la NAP y del Puerto. NO incluyas textos adicionales entre paréntesis, nombres de barrios, referencias de ODF o comentarios extra que vengan en el ticket.
-   - Ejemplo NAP limpia: TSFA_NAP_1058
-   - Ejemplo Puerto limpio: 3 (o el número exacto indicado)
+2. REGLA PARA NAP Y PUERTO: Extrae ÚNICAMENTE del dictado/texto.
 3. Si un campo no se menciona ni en el ticket ni en el dictado, escribe "N/A".
 4. Si el técnico corrige un dato durante el audio/texto, toma únicamente la última versión dictada.
 
@@ -36,8 +34,8 @@ Nro. de Ticket: [Extraer del ticket]
 Nombre del Cliente: [Extraer del ticket]
 Contrato: [Extraer del ticket]
 
-Nap : [Extraer únicamente el código limpio de la NAP]
-Puerto : [Extraer únicamente el número o código de puerto limpio]
+Nap : [Extraer del dictado/texto]
+Puerto : [Extraer del dictado/texto]
 Marquilla : [Extraer del dictado/texto]
 
 Marca de Onu : [Extraer del dictado/texto]
@@ -56,9 +54,11 @@ Materiales⚒️:
 
 IPTV📺: [Extraer del dictado/texto]
 
-Potencias⚡️: [Extraer del dictado/texto o mantener la del ticket si no se indica otra]
+Potencias⚡️: [Extraer del dictado/texto y añade la distancia que indica en el dictado con la letra m al final y entre parentesis los numeros. Ejemplo (3682m)]
 
-Técnico: Alfredo Meléndez
+Técnicos: Equipo #04 Alfredo Melendez/Alexis González 
+
+----------------
 `;
 
 async function procesarMensaje(msg) {
