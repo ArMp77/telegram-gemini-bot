@@ -9,7 +9,7 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!TELEGRAM_TOKEN || !GEMINI_API_KEY) {
-  console.error("❌ ERROR CRÍTICO: Faltan las variables de entorno.");
+  console.error("❌ ERROR CRÍTICO: Faltan las variables TELEGRAM_TOKEN o GEMINI_API_KEY en Render.");
   process.exit(1);
 }
 
@@ -61,7 +61,8 @@ Técnico: Alfredo Meléndez
 `;
 
 async function llamarGeminiREST(contentsPayload) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // Se usa gemini-1.5-flash-latest para garantizar compatibilidad con el endpoint v1beta
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -81,14 +82,19 @@ async function llamarGeminiREST(contentsPayload) {
     throw new Error(data.error?.message || 'Error en respuesta de Gemini');
   }
 
-  return data.candidates[0].content.parts[0].text;
+  const candidate = data.candidates && data.candidates[0];
+  if (candidate && candidate.content && candidate.content.parts && candidate.content.parts[0]) {
+    return candidate.content.parts[0].text;
+  }
+
+  throw new Error("Respuesta de Gemini vacía o con formato no esperado.");
 }
 
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
 
   try {
-    // Si envía un mensaje de texto
+    // Si envía un mensaje de texto (Ticket o datos dictados)
     if (msg.text) {
       bot.sendMessage(chatId, "⏳ Generando reporte...");
       historialChats[chatId] = msg.text;
