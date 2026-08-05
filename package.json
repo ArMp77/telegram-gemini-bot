@@ -1,14 +1,14 @@
 {
-  "name": "telegram-gemini-bot",
+  "name": "telegram-groq-bot",
   "version": "1.0.0",
-  "description": "Bot de reportes para ThunderNet",
+  "description": "Bot de reportes ThunderNet",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "@google/genai": "latest",
     "express": "^4.19.2",
+    "groq-sdk": "^0.7.0",
     "node-fetch": "^2.7.0",
     "node-telegram-bot-api": "^0.66.0"
   }
