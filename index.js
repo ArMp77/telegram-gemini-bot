@@ -13,7 +13,6 @@ if (!TELEGRAM_TOKEN || !GEMINI_API_KEY) {
   process.exit(1);
 }
 
-// Inicializar el bot DESACTIVANDO polling por completo
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
 
 // Almacenamiento temporal del último ticket por chat
@@ -61,8 +60,29 @@ Potencias⚡️: [Extraer del dictado/texto o mantener la del ticket si no se in
 Técnico: Alfredo Meléndez
 `;
 
+// Función para listar modelos disponibles en tus logs de Render
+async function diagnosticarModelosDisponibles() {
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+    const data = await res.json();
+    if (data.models) {
+      console.log("📋 MODELOS DISPONIBLES EN TU CUENTA:");
+      data.models.forEach(m => {
+        if (m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")) {
+          console.log(`  - ${m.name}`);
+        }
+      });
+    } else {
+      console.error("❌ Respuesta al listar modelos:", JSON.stringify(data));
+    }
+  } catch (err) {
+    console.error("❌ Error consultando modelos:", err.message);
+  }
+}
+
 async function llamarGeminiREST(contentsPayload) {
-  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // Probamos con gemini-2.0-flash o gemini-2.5-flash
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -90,7 +110,6 @@ async function llamarGeminiREST(contentsPayload) {
   throw new Error("Respuesta de Gemini vacía o con formato no esperado.");
 }
 
-// Procesar lógica del mensaje
 async function procesarMensaje(msg) {
   const chatId = msg.chat.id;
 
@@ -139,7 +158,6 @@ async function procesarMensaje(msg) {
   }
 }
 
-// Endpoint de Webhook para Telegram
 app.post(`/bot${TELEGRAM_TOKEN}`, (req, res) => {
   if (req.body && req.body.message) {
     procesarMensaje(req.body.message);
@@ -153,7 +171,9 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`Servidor activo en puerto ${PORT}`);
   
-  // Configurar webhook automáticamente en Telegram al iniciar el servidor
+  // Ejecuta la verificación de modelos disponibles al iniciar
+  diagnosticarModelosDisponibles();
+
   if (process.env.RENDER_EXTERNAL_URL) {
     const webhookUrl = `${process.env.RENDER_EXTERNAL_URL}/bot${TELEGRAM_TOKEN}`;
     try {
