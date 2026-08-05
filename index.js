@@ -13,12 +13,8 @@ if (!TELEGRAM_TOKEN || !GEMINI_API_KEY) {
   process.exit(1);
 }
 
+// Inicializar el bot DESACTIVANDO polling por completo
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
-
-// Forzar el inicio de polling de forma limpia
-bot.startPolling({ restart: true }).catch((err) => {
-  console.error("Error al iniciar polling:", err.message);
-});
 
 // Almacenamiento temporal del último ticket por chat
 const historialChats = {};
@@ -66,7 +62,6 @@ Técnico: Alfredo Meléndez
 `;
 
 async function llamarGeminiREST(contentsPayload) {
-  // Se usa gemini-1.5-flash-latest para garantizar compatibilidad con el endpoint v1beta
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
   const response = await fetch(url, {
@@ -95,11 +90,11 @@ async function llamarGeminiREST(contentsPayload) {
   throw new Error("Respuesta de Gemini vacía o con formato no esperado.");
 }
 
-bot.on('message', async (msg) => {
+// Procesar lógica del mensaje
+async function procesarMensaje(msg) {
   const chatId = msg.chat.id;
 
   try {
-    // Si envía un mensaje de texto (Ticket o datos dictados)
     if (msg.text) {
       bot.sendMessage(chatId, "⏳ Generando reporte...");
       historialChats[chatId] = msg.text;
@@ -112,7 +107,6 @@ bot.on('message', async (msg) => {
       const respuestaTexto = await llamarGeminiREST(payload);
       bot.sendMessage(chatId, respuestaTexto);
     } 
-    // Si envía una nota de voz
     else if (msg.voice) {
       bot.sendMessage(chatId, "⏳ Procesando audio y generando reporte...");
 
@@ -143,8 +137,30 @@ bot.on('message', async (msg) => {
     console.error('❌ ERROR PROCESANDO MENSAJE:', error.message);
     bot.sendMessage(chatId, '❌ Hubo un error procesando la información. Inténtalo nuevamente.');
   }
+}
+
+// Endpoint de Webhook para Telegram
+app.post(`/bot${TELEGRAM_TOKEN}`, (req, res) => {
+  if (req.body && req.body.message) {
+    procesarMensaje(req.body.message);
+  }
+  res.sendStatus(200);
 });
 
+app.get('/', (req, res) => res.send('Bot activo con Webhook'));
+
 const PORT = process.env.PORT || 3000;
-app.get('/', (req, res) => res.send('Bot activo'));
-app.listen(PORT, () => console.log(`Servidor activo en puerto ${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`Servidor activo en puerto ${PORT}`);
+  
+  // Configurar webhook automáticamente en Telegram al iniciar el servidor
+  if (process.env.RENDER_EXTERNAL_URL) {
+    const webhookUrl = `${process.env.RENDER_EXTERNAL_URL}/bot${TELEGRAM_TOKEN}`;
+    try {
+      await bot.setWebHook(webhookUrl);
+      console.log(`✅ Webhook registrado con éxito en: ${webhookUrl}`);
+    } catch (err) {
+      console.error('❌ Error registrando Webhook:', err.message);
+    }
+  }
+});
