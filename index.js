@@ -20,45 +20,47 @@ const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
 const historialChats = {};
 
 const SYSTEM_PROMPT = `
-Eres un asistente técnico de telecomunicaciones para la empresa ThunderNet. Tu tarea es extraer la información de las notas/tickets y dictados de campo para generar un reporte con formato estricto.
+Eres un asistente técnico de telecomunicaciones para ThunderNet. Tu tarea es extraer la información del ticket y dictado de campo para rellenar una plantilla técnica.
 
-REGLAS DE EXTRACCIÓN Y FORMATO:
-1. MANTÉN LOS EMOTICONOS E ÍCONOS EXACTAMENTE COMO SE INDICAN EN LA PLANTILLA. NO LOS ELIMINES NI MODIFIQUES.
-2. REGLA PARA NAP Y PUERTO: Extrae ÚNICAMENTE del dictado/texto.
-3. Si un campo no se menciona ni en el ticket ni en el dictado, escribe "N/A".
-4. Si el técnico corrige un dato durante el audio/texto, toma únicamente la última versión dictada.
+REGLAS DE ORO:
+1. NUNCA EXPLIQUES TU RAZONAMIENTO EN LA SALIDA. No agregues frases como "pero se menciona...", "se toma la última versión", ni explicaciones entre paréntesis. Entrega ÚNICAMENTE el dato final extraído.
+2. Si el técnico da una corrección durante el dictado o el dato del dictado contradice al ticket, escribe ÚNICAMENTE la versión corregida final.
+3. Conserva los emoticonos exactamente como se muestran en la plantilla.
+4. Si un campo no es mencionado ni en el ticket ni en el dictado, escribe "N/A".
 
-PLANTILLA DE SALIDA OBLIGATORIA (Copia los nombres de campos e íconos exactamente como están aquí, sin agregar introducciones ni saludos):
+EJEMPLO DE COMPORTAMIENTO:
+- Si el ticket dice "NAP 245" y el dictado dice "Perdón, corregido es NAP 252", la salida DEBE ser:
+  Nap : NAP 252 (Omitiendo cualquier texto explicativo).
+
+PLANTILLA DE SALIDA OBLIGATORIA (Copia exactamente esta estructura):
 
 Nro. de Ticket: [Extraer del ticket]
 Nombre del Cliente: [Extraer del ticket]
 Contrato: [Extraer del ticket]
 
-Nap : [Extraer del dictado/texto]
-Puerto : [Extraer del dictado/texto]
-Marquilla : [Extraer del dictado/texto]
+Nap : [Solo el valor final limpio de la NAP]
+Puerto : [Solo el número/valor final limpio del puerto]
+Marquilla : [Solo el valor limpio]
 
-Marca de Onu : [Extraer del dictado/texto]
-Modelo de Onu: [Extraer del dictado/texto]
-Marca del router: [Extraer del dictado/texto]
-Modelo del router: [Extraer del dictado/texto]
+Marca de Onu : [Valor]
+Modelo de Onu: [Valor]
+Marca del router: [Valor]
+Modelo del router: [Valor]
 
-Observación🔎 [Extraer del ticket o dictado]
+Observación🔎 : [Extraer del ticket o dictado]
 
-Falla🚨: [Extraer del dictado/texto]
+Falla🚨 : [Extraer del dictado/texto]
 
-Correctivos aplicados👷: [Extraer del dictado/texto]
+Correctivos aplicados👷 : [Extraer del dictado/texto]
 
-Materiales⚒️:
-[Extraer lista de materiales del dictado/texto]
+Materiales⚒️ :
+[Lista de materiales o N/A]
 
-IPTV📺: [Extraer del dictado/texto]
+IPTV📺 : [Extraer del dictado/texto]
 
-Potencias⚡️: [Extraer del dictado/texto y añade la distancia que indica en el dictado con la letra m al final y entre parentesis los numeros. Ejemplo (3682m)]
+Potencias⚡️ : [Potencia dBm / Potencia dBm (distancia en metros con m final, ej: 5024m)]
 
-Técnicos: Equipo #04 Alfredo Melendez/Alexis González 
-
-----------------
+Técnicos: Equipo #04 Alfredo Meléndez/Alexis González
 `;
 
 async function procesarMensaje(msg) {
@@ -75,7 +77,7 @@ async function procesarMensaje(msg) {
           { role: "user", content: `ENTRADA DEL TÉCNICO:\n${msg.text}` }
         ],
         model: "llama-3.3-70b-versatile",
-        temperature: 0.1
+        temperature: 0.0 // Cero creatividad para forzar precisión absoluta
       });
 
       const respuesta = completion.choices[0]?.message?.content || "No se pudo generar respuesta.";
@@ -103,7 +105,7 @@ async function procesarMensaje(msg) {
           { role: "user", content: `${contextoPrevio}DICTADO DE CAMPO TRANCRITO:\n${textoAudio}` }
         ],
         model: "llama-3.3-70b-versatile",
-        temperature: 0.1
+        temperature: 0.0
       });
 
       const respuesta = completion.choices[0]?.message?.content || "No se pudo generar respuesta.";
