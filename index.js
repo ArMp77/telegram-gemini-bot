@@ -1,8 +1,26 @@
+JSON
+{
+  "name": "telegram-gemini-bot",
+  "version": "1.0.0",
+  "description": "Bot de reportes de fibra para Telegram con Gemini",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "express": "^4.19.2",
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}
+2. Modifica tu archivo index.js en GitHub
+Debes ajustar la forma en que se importa la librería en index.js. Reemplaza el contenido de tu index.js con la estructura oficial actualizada:
+
+JavaScript
 const TelegramBot = require('node-telegram-bot-api');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const express = require('express');
 
-// Inicializar servidores e instancias
 const app = express();
 app.use(express.json());
 
@@ -10,9 +28,8 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-// System Prompt de extracción flexible
 const SYSTEM_PROMPT = `
 Eres un asistente técnico de telecomunicaciones para la empresa ThunderNet.
 
@@ -55,60 +72,44 @@ Potencias⚡️: [Extraer del dictado/texto o mantener la del ticket si no se in
 Técnico: Alfredo Meléndez
 `;
 
-// Procesar mensajes de texto y notas de voz
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
 
   try {
-    let contents = [];
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: SYSTEM_PROMPT 
+    });
 
-    // Si el mensaje es una nota de voz
     if (msg.voice) {
       bot.sendMessage(chatId, "⏳ Procesando audio y generando reporte...");
       const fileLink = await bot.getFileLink(msg.voice.file_id);
       
-      // Descargar audio en memoria
       const response = await fetch(fileLink);
       const arrayBuffer = await response.arrayBuffer();
       const base64Audio = Buffer.from(arrayBuffer).toString('base64');
 
-      contents = [
-        {
-          inlineData: {
-            mimeType: 'audio/ogg',
-            data: base64Audio
-          }
-        },
-        { text: SYSTEM_PROMPT }
-      ];
-    } 
-    // Si el mensaje es un texto (ticket o dictado escrito)
-    else if (msg.text) {
+      const audioPart = {
+        inlineData: {
+          data: base64Audio,
+          mimeType: 'audio/ogg'
+        }
+      };
+
+      const result = await model.generateContent([audioPart, "Procesa el audio e integra con la plantilla."]);
+      bot.sendMessage(chatId, result.response.text());
+
+    } else if (msg.text) {
       bot.sendMessage(chatId, "⏳ Generando reporte...");
-      contents = [
-        { text: SYSTEM_PROMPT },
-        { text: `Entrada del técnico:\n${msg.text}` }
-      ];
-    } else {
-      return;
+      const result = await model.generateContent(`Entrada del técnico:\n${msg.text}`);
+      bot.sendMessage(chatId, result.response.text());
     }
-
-    // Llamada a Gemini 1.5 Flash
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: contents,
-    });
-
-    const reporteFinal = response.text;
-    bot.sendMessage(chatId, reporteFinal);
-
   } catch (error) {
     console.error('Error procesando mensaje:', error);
     bot.sendMessage(chatId, '❌ Hubo un error procesando la información. Inténtalo de nuevo.');
   }
 });
 
-// Servidor web mínimo para mantener vivo el servicio en la nube
 const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => res.send('Bot activo'));
-app.listen(PORT, () => console.log(`Servidor activo en el puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Servidor activo en puerto ${PORT}`));
