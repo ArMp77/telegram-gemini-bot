@@ -20,24 +20,24 @@ const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
 const historialChats = {};
 
 const SYSTEM_PROMPT = `
-Eres un asistente técnico de telecomunicaciones para la empresa ThunderNet.
+Eres un asistente técnico de telecomunicaciones para la empresa ThunderNet. Tu tarea es extraer la información de las notas/tickets y dictados de campo para generar un reporte con formato estricto.
 
-INSTRUCCIONES DE EXTRACCIÓN FLEXIBLE:
-1. Recibirás un ticket de avería de fibra óptica en texto y/o el dictado enviado por el técnico Alfredo Meléndez.
-2. El técnico dictará los datos de campo EN CUALQUIER ORDEN, con lenguaje informal o correcciones.
-3. Toma únicamente la última versión si hay correcciones sobre la marcha.
-4. Si un campo no se menciona, escribe "N/A".
+REGLAS DE EXTRACCIÓN Y FORMATO:
+1. MANTÉN LOS EMOTICONOS E ÍCONOS EXACTAMENTE COMO SE INDICAN EN LA PLANTILLA. NO LOS ELIMINES NI MODIFIQUES.
+2. REGLA PARA NAP Y PUERTO: Extrae ÚNICAMENTE el código o número limpio de la NAP y del Puerto. NO incluyas textos adicionales entre paréntesis, nombres de barrios, referencias de ODF o comentarios extra que vengan en el ticket.
+   - Ejemplo NAP limpia: TSFA_NAP_1058
+   - Ejemplo Puerto limpio: 3 (o el número exacto indicado)
+3. Si un campo no se menciona ni en el ticket ni en el dictado, escribe "N/A".
+4. Si el técnico corrige un dato durante el audio/texto, toma únicamente la última versión dictada.
 
-PLANTILLA DE SALIDA OBLIGATORIA (Sin introducciones ni saludos):
+PLANTILLA DE SALIDA OBLIGATORIA (Copia los nombres de campos e íconos exactamente como están aquí, sin agregar introducciones ni saludos):
 
 Nro. de Ticket: [Extraer del ticket]
-
 Nombre del Cliente: [Extraer del ticket]
-
 Contrato: [Extraer del ticket]
 
-Nap : [Extraer del dictado/texto]
-Puerto : [Extraer del dictado/texto]
+Nap : [Extraer únicamente el código limpio de la NAP]
+Puerto : [Extraer únicamente el número o código de puerto limpio]
 Marquilla : [Extraer del dictado/texto]
 
 Marca de Onu : [Extraer del dictado/texto]
@@ -75,6 +75,7 @@ async function procesarMensaje(msg) {
           { role: "user", content: `ENTRADA DEL TÉCNICO:\n${msg.text}` }
         ],
         model: "llama-3.3-70b-versatile",
+        temperature: 0.1
       });
 
       const respuesta = completion.choices[0]?.message?.content || "No se pudo generar respuesta.";
@@ -87,7 +88,6 @@ async function procesarMensaje(msg) {
       const resAudio = await fetch(fileLink);
       const buffer = await resAudio.buffer();
 
-      // Transcripción de audio ultra rápida con Whisper en Groq
       const transcription = await groq.audio.transcriptions.create({
         file: await Groq.toFile(buffer, "audio.ogg"),
         model: "whisper-large-v3",
@@ -100,9 +100,10 @@ async function procesarMensaje(msg) {
       const completion = await groq.chat.completions.create({
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `${contextoPrevio}DICTADO DE CAMPO TRANSCROTO:\n${textoAudio}` }
+          { role: "user", content: `${contextoPrevio}DICTADO DE CAMPO TRANCRITO:\n${textoAudio}` }
         ],
         model: "llama-3.3-70b-versatile",
+        temperature: 0.1
       });
 
       const respuesta = completion.choices[0]?.message?.content || "No se pudo generar respuesta.";
