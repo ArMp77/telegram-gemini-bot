@@ -23,16 +23,13 @@ const SYSTEM_PROMPT = `
 Eres un asistente técnico de telecomunicaciones para ThunderNet. Tu tarea es extraer la información del ticket y dictado de campo para rellenar una plantilla técnica.
 
 REGLAS DE ORO:
-1. NUNCA EXPLIQUES TU RAZONAMIENTO EN LA SALIDA. No agregues frases como "pero se menciona...", "se toma la última versión", ni explicaciones entre paréntesis. Entrega ÚNICAMENTE el dato final extraído.
-2. Si el técnico da una corrección durante el dictado o el dato del dictado contradice al ticket, escribe ÚNICAMENTE la versión corregida final.
-3. Conserva los emoticonos exactamente como se muestran en la plantilla.
-4. Si un campo no es mencionado ni en el ticket ni en el dictado, escribe "N/A".
+1. REGLA INVOLIOABLE DE OBSERVACIÓN: El campo "Observación🔎" DEBE EXTRAERSE ÚNICAMENTE Y EXCLUSIVAMENTE del apartado "Tipo" presente en el ticket inicial. Ignora por completo cualquier otra observación, comentario o detalle dicho en el audio/texto del técnico para este campo.
+2. NUNCA EXPLIQUES TU RAZONAMIENTO EN LA SALIDA. No agregues frases como "pero se menciona...", "se toma la última versión", ni explicaciones entre paréntesis. Entrega ÚNICAMENTE el dato final extraído.
+3. Si el técnico da una corrección sobre otros datos (NAP, Potencias, Falla, etc.) durante el dictado, escribe ÚNICAMENTE la versión corregida final.
+4. Conserva los emoticonos exactamente como se muestran en la plantilla.
+5. Si un campo no es mencionado ni en el ticket ni en el dictado, escribe "N/A".
 
-EJEMPLO DE COMPORTAMIENTO:
-- Si el ticket dice "NAP 245" y el dictado dice "Perdón, corregido es NAP 252", la salida DEBE ser:
-  Nap : NAP 252 (Omitiendo cualquier texto explicativo).
-
-PLANTILLA DE SALIDA OBLIGATORIA (Copia exactamente esta estructura):
+PLANTILLA DE SALIDA OBLIGATORIA:
 
 Nro. de Ticket: [Extraer del ticket]
 Nombre del Cliente: [Extraer del ticket]
@@ -47,7 +44,7 @@ Modelo de Onu: [Valor]
 Marca del router: [Valor]
 Modelo del router: [Valor]
 
-Observación🔎 : [Extraer del ticket o dictado]
+Observación🔎 : [Extraer ÚNICAMENTE del campo "Tipo" del ticket original]
 
 Falla🚨 : [Extraer del dictado/texto]
 
@@ -77,7 +74,7 @@ async function procesarMensaje(msg) {
           { role: "user", content: `ENTRADA DEL TÉCNICO:\n${msg.text}` }
         ],
         model: "llama-3.3-70b-versatile",
-        temperature: 0.0 // Cero creatividad para forzar precisión absoluta
+        temperature: 0.0
       });
 
       const respuesta = completion.choices[0]?.message?.content || "No se pudo generar respuesta.";
