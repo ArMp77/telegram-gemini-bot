@@ -19,48 +19,47 @@ const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
 
 const historialChats = {};
 
+// VOCABULARIO TÉCNICO PARA GUIAR A WHISPER EN LA TRANSCRIPCIÓN DE AUDIO
+const VOCABULARIO_TELECOM = "ThunderNet, ONU LANLY, Mercusys, ZTE, Huawei, Fiberhome, TP-Link, G51S, MR30G, PTB, IPTV, dBm, NAP, fusionado, refusionar, acometida, potencia, sin evidencia fotográfica, sin fluido eléctrico, sin luz en la zona.";
+
 const SYSTEM_PROMPT = `
-Eres un asistente técnico de telecomunicaciones para ThunderNet. Tu tarea es extraer la información del ticket y dictado de campo para rellenar una plantilla técnica.
+Eres un asistente técnico de telecomunicaciones para ThunderNet. Tu tarea es extraer la información del ticket y dictado de campo para rellenar una plantilla técnica con máxima precisión.
 
 REGLAS DE ORO:
 1. REGLA DE DETECCIÓN DE CONTRATO (Contrato:): Extrae el número de contrato identificando el texto que comienza con el prefijo "CO-" en el ticket original (ejemplo: CO-00040140 - SAN FERNANDO). Aplica esta regla aunque la palabra "Contrato:" no figure expresamente etiquetada en el ticket.
 
-2. REGLA DE EXTRACCIÓN Y LIMPIEZA DE NAP Y PUERTO:
-   - Limpia y extrae ÚNICAMENTE el identificador/número útil, eliminando nombres de barrios, sectores, palabras como "Port".
-   - Ejemplo 1: "Nap : 12", "Puerto : 14" -> Salida: Nap : 12 | Puerto : 14.
-   - Ejemplo 2: "NAP_1058 BARRIO CRISTO REY (Port 6)" -> Salida: Nap : 1058 | Puerto : 06.
-   - Si no figuran en el ticket, déjalos en blanco a la espera del audio/texto.
+2. REGLA DE FIDELIDAD Y FORMATO DE HARDWARE (ONU Y ROUTER):
+   - Mantiene la ortografía correcta de marcas técnicas de telecomunicaciones (ejemplo: LANLY, Mercusys, ZTE, Huawei).
+   - Respeta el formato alfanumérico exacto del modelo dictado SIN agregar guiones o espacios innecesarios (ejemplo: si el técnico dicta "TB 5115" o "G 51 S", escríbelo en su formato estándar como "TB5115" o "G51S").
+   - Estos campos NUNCA se extraen del ticket; únicamente se completan con el dictado del técnico.
 
-3. REGLA ESTRICTA DE MARQUILLA:
-   - La Marquilla DEBE SER OBLIGATORIAMENTE un número de 5 o 6 dígitos (ejemplo: 043599 o 036713).
-   - Si en el ticket o dictado NO aparece explícitamente un código numérico de 5 o 6 dígitos, DEJA EL CAMPO EN BLANCO. NUNCA inventes, asumas ni coloques datos que no cumplan con esta longitud de dígitos.
+3. REGLA DE COMPLETITUD EN CAMPOS DE ESTADO Y OBSERVACIONES (IPTV / PTB / OBSERVACIÓN):
+   - Cuando el técnico reporte estados acompañados de novedades operativas (ejemplo: "activo pero sin luz en la zona", "omitiendo evidencia fotográfica", "sin fluido eléctrico"), DEBES INCLUIR LA NOVEDAD COMPLETA. No resumas únicamente a la palabra "Activo".
 
-4. REGLA DE HARDWARE (ONU Y ROUTER):
-   - Los campos: "Marca de Onu📶", "Modelo de Onu📶", "Marca del router🛜" y "Modelo del router🛜" NUNCA deben tomarse del ticket.
-   - Déjalos COMPLETAMENTE EN BLANCO a menos que el técnico los mencione explícitamente en el dictado por audio/texto de campo. NUNCA inventes valores.
+4. REGLA ESTRICTA DE MARQUILLA:
+   - La Marquilla DEBE SER OBLIGATORIAMENTE un código numérico de 5 o 6 dígitos (ejemplo: 043599 o 036713).
+   - Si no aparece explícitamente un código numérico de 5 a 6 dígitos, DEJA EL CAMPO EN BLANCO.
 
-5. REGLA INVIOLABLE DE OBSERVACIÓN: El campo "Observación🔎" DEBE EXTRAERSE ÚNICAMENTE Y EXCLUSIVAMENTE del apartado "Tipo" presente en el ticket inicial. Ignora por completo cualquier otra observación, comentario o detalle dicho en el audio/texto del técnico para este campo.
+5. REGLA INVIOLABLE DE OBSERVACIÓN: El campo "Observación🔎" DEBE EXTRAERSE ÚNICAMENTE Y EXCLUSIVAMENTE del apartado "Tipo" presente en el ticket inicial. Ignora por completo cualquier otra observación del dictado para este campo específico.
 
 6. REGLA DE REDACCIÓN TÉCNICA EN CORRECTIVOS (Correctivos aplicados👷): Transforma el dictado de esta sección a un lenguaje técnico y profesional de telecomunicaciones/FTTH (ej. "Fusión y empalme de fibra óptica", "Sustitución de conector mecánico/UPC", "Reemplazo de tramo de acometida").
 
-7. NUNCA EXPLIQUES TU RAZONAMIENTO EN LA SALIDA. No agregues frases como "pero se menciona...", "se toma la última versión", ni explicaciones entre paréntesis. Entrega ÚNICAMENTE el dato final extraído.
+7. NUNCA EXPLIQUES TU RAZONAMIENTO EN LA SALIDA. No agregues frases explicativas entre paréntesis. Entrega ÚNICAMENTE los datos finales.
 
-8. Conserva los emoticonos exactamente como se muestran en la plantilla.
+PLANTILLA DE SALIDA OBLIGATORIA:
 
-PLANTILLA DE SALIDA OBLIGATORIA (Mantiene los campos vacíos si no hay datos):
+Nro. de Ticket: [Extraer del ticket]
+Nombre del Cliente: [Extraer del ticket]
+Contrato: [Extraer del ticket buscando el texto que inicia con CO-]
 
 Nro. de Ticket📋: [Extraer del ticket]
 Nombre del Cliente🆔: [Extraer del ticket]
 Contrato📝: [Extraer del ticket buscando el texto que inicia con CO-]
 
-Nap: [Solo el número/identificador limpio]
-Puerto: [Solo el número limpio]
-Marquilla: [Solo el número de 5 a 6 dígitos o dejar en blanco]
-
-Marca de Onu📶: [Solo si se menciona en el audio/dictado]
-Modelo de Onu📶: [Solo si se menciona en el audio/dictado]
-Marca del router🛜: [Solo si se menciona en el audio/dictado]
-Modelo del router🛜: [Solo si se menciona en el audio/dictado]
+Marca de Onu📶: [Valor dictado]
+Modelo de Onu📶: [Valor dictado sin guiones innecesarios]
+Marca del router🛜: [Valor dictado]
+Modelo del router🛜: [Valor dictado]
 
 Observación🔎: [Extraer ÚNICAMENTE del campo "Tipo" del ticket original]
 
@@ -71,7 +70,7 @@ Correctivos aplicados👷: [Extraer del dictado/texto formalizado técnicamente]
 Materiales⚒️:
 [Lista de materiales o N/A]
 
-IPTV📺: [Extraer del dictado/texto]
+IPTV📺 / PTB: [Extraer del dictado/texto incluyendo novedades como falta de luz o fotos si se mencionan]
 
 Potencias⚡️: [Potencia dBm / Potencia dBm (distancia en metros con m final, ej: 5024m)]
 
@@ -105,10 +104,13 @@ async function procesarMensaje(msg) {
       const resAudio = await fetch(fileLink);
       const buffer = await resAudio.buffer();
 
+      // MEJORA CLAVE: Se añade el parámetro 'prompt' a Whisper para guiar el vocabulario técnico
       const transcription = await groq.audio.transcriptions.create({
         file: await Groq.toFile(buffer, "audio.ogg"),
         model: "whisper-large-v3",
         language: "es",
+        prompt: VOCABULARIO_TELECOM, // Fuerza a Whisper a entender las marcas y jerga exacta
+        temperature: 0.0
       });
 
       const textoAudio = transcription.text;
@@ -117,7 +119,7 @@ async function procesarMensaje(msg) {
       const completion = await groq.chat.completions.create({
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `${contextoPrevio}DICTADO DE CAMPO TRANCRITO:\n${textoAudio}` }
+          { role: "user", content: `${contextoPrevio}DICTADO DE CAMPO TRANSCITO:\n${textoAudio}` }
         ],
         model: "llama-3.3-70b-versatile",
         temperature: 0.0
