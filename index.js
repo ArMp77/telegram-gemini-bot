@@ -48,9 +48,6 @@ REGLAS DE ORO:
 
 PLANTILLA DE SALIDA OBLIGATORIA:
 
-Nro. de Ticket: [Extraer del ticket]
-Nombre del Cliente: [Extraer del ticket]
-Contrato: [Extraer del ticket buscando el texto que inicia con CO-]
 
 Nro. de Ticket📋: [Extraer del ticket]
 Nombre del Cliente🆔: [Extraer del ticket]
