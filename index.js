@@ -70,7 +70,7 @@ Correctivos aplicados👷: [Extraer del dictado/texto formalizado técnicamente]
 Materiales⚒️:
 [Lista de materiales o N/A]
 
-IPTV📺 / PTB: [Extraer del dictado/texto incluyendo novedades como falta de luz o fotos si se mencionan]
+IPTV📺: [Extraer del dictado/texto incluyendo novedades como falta de luz o fotos si se mencionan]
 
 Potencias⚡️: [Potencia dBm / Potencia dBm (distancia en metros con m final, ej: 5024m)]
 
