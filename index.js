@@ -22,7 +22,7 @@ const historialChats = {};       // Guarda el ticket del cliente
 const borradoresPendientes = {};  // Guarda el borrador generado antes de confirmar
 const estadoEdicion = {};        // Guarda qué campo está corrigiendo el usuario
 
-const VOCABULARIO_TELECOM = "ThunderNet, ONU LANLY, Mercusys, ZTE, Huawei, Fiberhome, TP-Link, G51S, MR30G, PTB, IPTV, dBm, NAP, fusionado, refusionar, acometida, potencia, sin evidencia fotográfica, sin fluido eléctrico, sin luz en la zona, tirrap, tirraps, roseta, conector APC, conector UPC, metros de fibra, bobina, patchcord.";
+const VOCABULARIO_TELECOM = "ThunderNet, ONU LANLY, Mercusys, ZTE, Huawei, Fiberhome, TP-Link, G51S, MR30G, PTB, IPTV, dBm, NAP, fusionado, refusionar, acometida, potencia, sin evidencia fotográfica, sin fluido eléctrico, sin luz en la zona, tirrap, tirraps, roseta, conector APC, conector UPC, metros de fibra, bobina, patchcord, teipe.";
 
 const SYSTEM_PROMPT = `
 Eres un asistente técnico de telecomunicaciones para ThunderNet. Tu tarea es extraer la información del ticket y dictado de campo para rellenar una plantilla técnica con máxima precisión.
@@ -61,6 +61,15 @@ REGLAS DE ORO:
    - Si no se usaron materiales, escribe únicamente "N/A".
 9. NUNCA EXPLIQUES TU RAZONAMIENTO EN LA SALIDA.
 10. Conserva los emoticonos exactamente como se muestran en la plantilla.
+11. REGLA DE NORMALIZACIÓN FONÉTICA DE AUDIO:
+   Si en la transcripción de voz detectas términos mal escritos por similitud fónica, corrígelos automáticamente a su estándar técnico:
+   - "mercusis", "merculi", "merkusi" --> Mercusys
+   - "lanli", "lan luy", "laly" --> LANLY
+   - "tira", "tiras", "tie wrap", "tirap" --> tirrap / tirraps
+   - "roseta", "rosetas", "roset" --> roseta
+   - "apc", "a pe ce" --> APC
+   - "upc", "u pe ce" --> UPC
+`
 
 
 PLANTILLA DE SALIDA OBLIGATORIA:
