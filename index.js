@@ -162,16 +162,22 @@ async function procesarMensaje(msg) {
       nuevoDato = transcription.text;
     }
 
-    // Pedir a Llama que reemplace solo esa sección dentro del borrador actual
-    const borradorPrevio = borradoresPendientes[chatId];
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: "Eres un editor técnico. Reemplaza ÚNICAMENTE el campo especificado dentro del reporte manteniedo la estructura exacta de la plantilla." },
-        { role: "user", content: `REPORTE ACTUAL:\n${borradorPrevio}\n\nSECCIÓN A CAMBIAR: ${campoAEditar}\nNUEVO VALOR DICTADO: ${nuevoDato}` }
-      ],
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.0
-    });
+  // Pedir a Llama que reemplace solo esa sección dentro del borrador actual
+const borradorPrevio = borradoresPendientes[chatId];
+const completion = await groq.chat.completions.create({
+  messages: [
+    { 
+      role: "system", 
+      content: "Eres un editor estricto de plantillas. Tu ÚNICA función es devolver la plantilla con el campo actualizado. NUNCA agregues títulos, encabezados ni frases como 'REPORTE ACTUALIZADO:', 'AQUÍ TIENES EL REPORTE:', etc. Comienza la salida DIRECTAMENTE con el primer campo de la plantilla." 
+    },
+    { 
+      role: "user", 
+      content: `PLANTILLA ACTUAL:\n${borradorPrevio}\n\nCAMPO A MODIFICAR: ${campoAEditar}\nNUEVO VALOR: ${nuevoDato}` 
+    }
+  ],
+  model: "llama-3.3-70b-versatile",
+  temperature: 0.0
+});
 
     const borradorActualizado = completion.choices[0]?.message?.content || borradorPrevio;
     borradoresPendientes[chatId] = borradorActualizado;
