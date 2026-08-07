@@ -41,7 +41,11 @@ REGLAS DE ORO:
 5. REGLA ESTRICTA DE MARQUILLA:
    - La Marquilla DEBE SER OBLIGATORIAMENTE un número de 5 o 6 dígitos (ejemplo: 043599 o 036713).
    - Si en el ticket o dictado NO aparece explícitamente un código numérico de 5 o 6 dígitos, DEJA EL CAMPO EN BLANCO. NUNCA inventes, asumas ni coloques datos que no cumplan con esta longitud de dígitos.
-6. REGLA INVIOLABLE DE OBSERVACIÓN: El campo "Observación🔎" DEBE EXTRAERSE ÚNICAMENTE Y EXCLUSIVAMENTE del apartado "Tipo" presente en el ticket inicial. Ignora por completo cualquier otra observación, comentario o detalle dicho en el audio/texto del técnico para este campo.
+6. REGLA INVIOLABLE DE OBSERVACIÓN (Observación🔎):
+   - Debe extraerse ÚNICA y EXCLUSIVAMENTE del apartado "Tipo" del ticket original.
+   - IGNORA por completo cualquier texto o indicación etiquetada como "Observación" o "Observaciones" que aparezca en otra parte del ticket.
+   - Si el texto extraído del apartado "Tipo" está en MAYÚSCULAS SOSTENIDAS, conviértelo a formato de oración normal (primera letra en mayúscula y el resto en minúsculas adecuadamente).   - Si el texto está en MAYÚSCULAS SOSTENIDAS, conviértelo a formato de oración normal (primera letra en mayúscula y el resto en minúsculas adecuadamente).
+   - NUNCA agregues ni extraigas información del dictado de voz para este campo; únicamente del ticket original.
 7. REGLA DE REDACCIÓN TÉCNICA EN CORRECTIVOS (Correctivos aplicados👷): Transforma el dictado de esta sección a un lenguaje técnico y profesional de telecomunicaciones/FTTH (ej. "Fusión y empalme de fibra óptica", "Sustitución de conector mecánico/UPC", "Reemplazo de tramo de acometida").
 8. REGLA ESTRICTA DE FORMATO DE MATERIALES (Materiales⚒️):
    - Cada material dictado DEBE ir en una línea individual (separado por saltos de línea).
@@ -68,7 +72,7 @@ Modelo de Onu📶: [Valor dictado]
 Marca del router🛜: [Valor dictado]
 Modelo del router🛜: [Valor dictado]
 
-Observación🔎 : [Extraer ÚNICAMENTE del campo "Tipo" del ticket original]
+Observación🔎 : [Extraer del campo Observación/Tipo del ticket original y formatear en minúsculas/oración]
 
 Falla🚨: [Extraer del dictado/texto]
 
