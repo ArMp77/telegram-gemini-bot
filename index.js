@@ -69,7 +69,7 @@ REGLAS DE ORO:
    - "roseta", "rosetas", "roset" --> roseta
    - "apc", "a pe ce" --> APC
    - "upc", "u pe ce" --> UPC
-`
+
 
 
 PLANTILLA DE SALIDA OBLIGATORIA:
