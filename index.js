@@ -191,7 +191,7 @@ async function procesarMensaje(msg) {
       const borrador = completion.choices[0]?.message?.content || "Error generando el borrador.";
       borradoresPendientes[chatId] = borrador;
 
-      bot.sendMessage(chatId, `📝 *BORRADOR DE REPORTE*\n\n${borrador}`, {
+      bot.sendMessage(chatId, borrador, {
         parse_mode: "Markdown",
         reply_markup: obtenerBotoneraPrincipal()
       });
@@ -226,7 +226,7 @@ async function procesarMensaje(msg) {
       const borrador = completion.choices[0]?.message?.content || "Error generando el borrador.";
       borradoresPendientes[chatId] = borrador;
 
-      bot.sendMessage(chatId, `📝 *BORRADOR DE REPORTE*\n\n${borrador}`, {
+      bot.sendMessage(chatId, borrador, {
         parse_mode: "Markdown",
         reply_markup: obtenerBotoneraPrincipal()
       });
