@@ -100,7 +100,7 @@ IPTV📺: [Extraer del dictado/texto con novedades si existen]
 
 Potencias⚡️: [Potencia dBm / Potencia dBm (distancia en metros con m final, ej: 5024m)]
 
-Técnicos: Equipo #04 Alfredo Meléndez/Alexis González
+Técnicos: Equipo #06 Alfredo Meléndez/Robert Pérez
 `;
 
 // FUNCIONES AUXILIARES DE TECLADO INTERACTIVO
@@ -184,7 +184,7 @@ async function procesarMensaje(msg) {
           content: `PLANTILLA ACTUAL:\n${borradorPrevio}\n\nCAMPO A MODIFICAR: ${campoAEditar}\nNUEVO VALOR: ${nuevoDato}` 
         }
       ],
-      model: "meta-llama/llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       temperature: 0.0
     });
 
@@ -209,7 +209,7 @@ async function procesarMensaje(msg) {
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: `ENTRADA DEL TÉCNICO:\n${msg.text}` }
         ],
-        model: "meta-llama/llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         temperature: 0.0
       });
 
@@ -244,7 +244,7 @@ async function procesarMensaje(msg) {
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: `${contextoPrevio}DICTADO DE CAMPO TRANSCITO:\n${textoAudio}` }
         ],
-        model: "meta-llama/llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         temperature: 0.0
       });
 
