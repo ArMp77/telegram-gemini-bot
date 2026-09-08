@@ -28,7 +28,7 @@ const SYSTEM_PROMPT = `
 Eres un asistente técnico de telecomunicaciones para ThunderNet. Tu tarea es extraer la información del ticket y dictado de campo para rellenar una plantilla técnica con máxima precisión.
 
 REGLAS DE ORO:
-1. REGLA DE DETECCIÓN DE CONTRATO (Contrato:): Extrae el número de contrato identificando el texto que comienza con el prefijo "CO-" en el ticket original. (ejemplo: CO-00040140 - SAN FERNANDO). Aplica esta regla aunque la palabra "Contrato:" no figure expresamente etiquetada en el ticket.
+1. REGLA DE DETECCIÓN DE CONTRATO (Contrato:): Extrae el número de contrato identificando el texto que comienza con el prefijo "CO-" en el ticket original. (ejemplo: CO-00040140 - SAN FERNANDO). Aplica esta regla aunque la palabra "Contrato:" no figure expressamente etiquetada en el ticket.
 2. REGLA DE HARDWARE (ONU Y ROUTER):
    - Los campos: "Marca de Onu📶", "Modelo de Onu📶", "Marca del router🛜" y "Modelo del router🛜" NUNCA deben tomarse del ticket.
    - Déjalos COMPLETAMENTE EN BLANCO a menos que el técnico los mencione explícitamente en el dictado por audio/texto de campo. NUNCA inventes valores.
@@ -171,22 +171,22 @@ async function procesarMensaje(msg) {
       nuevoDato = transcription.text;
     }
 
-  // Pedir a Llama que reemplace solo esa sección dentro del borrador actual
-const borradorPrevio = borradoresPendientes[chatId];
-const completion = await groq.chat.completions.create({
-  messages: [
-    { 
-      role: "system", 
-      content: "Eres un editor estricto de plantillas. Tu ÚNICA función es devolver la plantilla con el campo actualizado. NUNCA agregues títulos, encabezados ni frases como 'REPORTE ACTUALIZADO:', 'AQUÍ TIENES EL REPORTE:', etc. Comienza la salida DIRECTAMENTE con el primer campo de la plantilla." 
-    },
-    { 
-      role: "user", 
-      content: `PLANTILLA ACTUAL:\n${borradorPrevio}\n\nCAMPO A MODIFICAR: ${campoAEditar}\nNUEVO VALOR: ${nuevoDato}` 
-    }
-  ],
-  model: "llama-3.3-70b-versatile",
-  temperature: 0.0
-});
+    // Pedir a Llama que reemplace solo esa sección dentro del borrador actual
+    const borradorPrevio = borradoresPendientes[chatId];
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { 
+          role: "system", 
+          content: "Eres un editor estricto de plantillas. Tu ÚNICA función es devolver la plantilla con el campo actualizado. NUNCA agregues títulos, encabezados ni frases como 'REPORTE ACTUALIZADO:', 'AQUÍ TIENES EL REPORTE:', etc. Comienza la salida DIRECTAMENTE con el primer campo de la plantilla." 
+        },
+        { 
+          role: "user", 
+          content: `PLANTILLA ACTUAL:\n${borradorPrevio}\n\nCAMPO A MODIFICAR: ${campoAEditar}\nNUEVO VALOR: ${nuevoDato}` 
+        }
+      ],
+      model: "meta-llama/llama-3.3-70b-versatile",
+      temperature: 0.0
+    });
 
     const borradorActualizado = completion.choices[0]?.message?.content || borradorPrevio;
     borradoresPendientes[chatId] = borradorActualizado;
@@ -198,7 +198,7 @@ const completion = await groq.chat.completions.create({
     return;
   }
 
-  // 3. FLUTO CONVENCIONAL DE RECEPCIÓN (TICKET O AUDIO DE CAMPO)
+  // 3. FLUJO CONVENCIONAL DE RECEPCIÓN (TICKET O AUDIO DE CAMPO)
   try {
     if (msg.text) {
       bot.sendMessage(chatId, "⏳ Guardando ticket y generando borrador...");
@@ -209,7 +209,7 @@ const completion = await groq.chat.completions.create({
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: `ENTRADA DEL TÉCNICO:\n${msg.text}` }
         ],
-        model: "llama-3.3-70b-versatile",
+        model: "meta-llama/llama-3.3-70b-versatile",
         temperature: 0.0
       });
 
@@ -244,7 +244,7 @@ const completion = await groq.chat.completions.create({
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: `${contextoPrevio}DICTADO DE CAMPO TRANSCITO:\n${textoAudio}` }
         ],
-        model: "llama-3.3-70b-versatile",
+        model: "meta-llama/llama-3.3-70b-versatile",
         temperature: 0.0
       });
 
