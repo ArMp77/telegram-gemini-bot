@@ -41,15 +41,15 @@ REGLAS DE ORO:
 5. REGLA ESTRICTA DE MARQUILLA:
    - La Marquilla DEBE SER OBLIGATORIAMENTE un número de 5 o 6 dígitos (ejemplo: 043599 o 036713).
    - Si en el ticket o dictado NO aparece explícitamente un código numérico de 5 o 6 dígitos, DEJA EL CAMPO EN BLANCO. NUNCA inventes, asumas ni coloques datos que no cumplan con esta longitud de dígitos.
-6. REGLA STRICTA E INVIOLABLE DE OBSERVACIÓN (Observación🔎):
-   - DEBE EXTRAERSE ÚNICA Y EXCLUSIVAMENTE DEL VALOR EN LA LÍNEA QUE EMPIEZA CON "Tipo:" EN EL TICKET ORIGINAL.
+6. REGLA ESTRICTA E INVIOLABLE DE OBSERVACIÓN (Observación🔎):
+   - DEBE EXTRAERSE ÚNICA Y EXCLUSIVAMENTE DEL VALOR EN LA LÍNEA QUE EMPIEZA CON "Tipo:" O "Tipo?" EN EL TICKET ORIGINAL.
    - REGULARIZACIÓN Y PROHIBICIÓN: IGNORA POR COMPLETO cualquier línea del ticket que diga "Observación:", "Observaciones:" o comentarios largos de atención al cliente.
    
    EJEMPLO DE EXTRACCIÓN CORRECTA:
    Si el ticket dice:
-   "Tipo: AVERIA - SIN SERVICIO"
+   "Tipo: SIN SERVICIO" O "Tipo? SIN SERVICIO" 
    "Observación: Cliente reporta LOS rojo desde ayer..."
-   --> Debes extraer para Observación🔎: "Averia - Sin Servicio" (tomado de Tipo, ignorando completamente el campo Observación del ticket).
+   --> Debes extraer para Observación🔎: "Sin Servicio" (tomado de Tipo, ignorando completamente el campo Observación del ticket).
 
    - Si el texto extraído del apartado "Tipo:" está en MAYÚSCULAS, conviértelo a formato de oración (primera letra mayúscula, resto minúsculas).
 7. REGLA DE REDACCIÓN TÉCNICA EN CORRECTIVOS (Correctivos aplicados👷): Transforma el dictado de esta sección a un lenguaje técnico y profesional de telecomunicaciones/FTTH (ej. "Fusión y empalme de fibra óptica", "Sustitución de conector mecánico/UPC", "Reemplazo de tramo de acometida").
