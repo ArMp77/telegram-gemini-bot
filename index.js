@@ -100,7 +100,7 @@ IPTV📺: [Extraer del dictado/texto con novedades si existen]
 
 Potencias⚡️: [Potencia dBm / Potencia dBm (distancia en metros con m final, ej: 5024m)]
 
-Técnicos: Equipo #06 Alfredo Meléndez/Robert Pérez
+Técnicos: Equipo #01 Alfredo Meléndez/Jaime Sanz
 `;
 
 // FUNCIONES AUXILIARES DE TECLADO INTERACTIVO
