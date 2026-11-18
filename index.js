@@ -69,6 +69,7 @@ REGLAS DE ORO:
    - "roseta", "rosetas", "roset" --> roseta
    - "apc", "a pe ce" --> APC
    - "upc", "u pe ce" --> UPC
+   12. REGLA DE EXTRACCIÓN DE COORDENADAS: Identifica y extrae las coordenadas geográficas (formato de latitud y longitud separadas por coma, ej: 7.8389673, -67.4254397) ya sea que vengan en el texto del ticket o dictadas por el técnico. Si no se proporcionan, déjalo en blanco.
 
 
 
@@ -77,6 +78,7 @@ PLANTILLA DE SALIDA OBLIGATORIA:
 Nro. de Ticket📋: [Extraer del ticket]
 Nombre del Cliente🆔: [Extraer del ticket]
 Contrato📝: [Extraer del ticket buscando el texto que inicia con CO-]
+Coordenadas🌐: [Extraer latitud y longitud en formato ej: 7.8389673, -67.4254397 o dejar en blanco]
 
 Nap: [Solo el número/identificador limpio]
 Puerto: [Solo el número limpio]
